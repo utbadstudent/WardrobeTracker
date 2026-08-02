@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Wardrobe Tracker</title>
+  
+  <!-- Custom Embedded App Favicon & Apple Touch Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23440000'/%3E%3Ctext x='50%25' y='55%25' font-size='55' text-anchor='middle' dominant-baseline='middle'%3E👕%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23440000'/%3E%3Ctext x='50%25' y='55%25' font-size='55' text-anchor='middle' dominant-baseline='middle'%3E👕%3C/text%3E%3C/svg%3E">
+
+  <!-- Embedded Web Manifest for Android Full-Screen PWA Install -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Wardrobe Tracker","short_name":"Wardrobe","start_url":".","display":"standalone","background_color":"%230d0d12","theme_color":"%230d0d12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23440000%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 font-size=%2255%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3E👕%3C/text%3E%3C/svg%3E","sizes":"192x192 512x512","type":"image/svg+xml"}]}'>
+  
+  <meta name="theme-color" content="#0d0d12">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 20% -10%, #1c1c26 0%, #0d0d12 60%);
+      color: #f0f0f5;
+      min-height: 100vh;
+      padding: 24px 16px 100px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #ffffff, #b7b7c9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p { font-size: 12px; color: #8a8a9a; margin-top: 4px; }
+
+    .section-title {
+      max-width: 480px;
+      margin: 28px auto 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #6f6f80;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .card {
+      position: relative;
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .card:active { transform: scale(0.96); }
+
+    .swatch {
+      width: 100%;
+      height: 46px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .name { font-size: 14px; font-weight: 600; color: #ffffff; }
+    .meta { font-size: 11px; color: #9a9aab; margin-top: 4px; min-height: 14px; }
+
+    .dots {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .dot.filled {
+      background: #f0f0f5;
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
+
+    .card.dirty {
+      opacity: 0.35;
+      filter: grayscale(0.6);
+      cursor: default;
+    }
+    .card.dirty:active { transform: none; }
+
+    .fab-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .laundry-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4f5bd5, #7b3fe4);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      box-shadow: 0 10px 25px rgba(90, 60, 220, 0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .laundry-btn:active { transform: scale(0.95); }
+
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: rgba(20, 20, 28, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      opacity: 0;
+      transition: 0.3s;
+      z-index: 50;
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: #6f6f80;
+      font-size: 13px;
+      max-width: 480px;
+      margin: 10px auto;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>👕 Wardrobe Tracker</h1>
+    <p>Tap a shirt to log a wear</p>
+  </header>
+
+  <div class="section-title">Available</div>
+  <div class="grid" id="availableGrid"></div>
+  <div class="empty-msg" id="availableEmpty">Everything's in the laundry basket 🧺</div>
+
+  <div class="section-title" id="dirtyTitle">In Laundry Basket</div>
+  <div class="grid" id="dirtyGrid"></div>
+  <div class="empty-msg" id="dirtyEmpty">Laundry basket is empty ✨</div>
+
+  <div class="fab-bar">
+    <button class="laundry-btn" id="laundryBtn">🧺 Do Laundry</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Salvaged 13 items initialized cleanly without legacy date tags
+    const defaultItems = [
+      { id: '1', name: 'Lavender', color: '#9575CD', wears: 0, lastWorn: null },
+      { id: '2', name: 'Sergeant Maroon', color: '#440000', wears: 0, lastWorn: null },
+      { id: '3', name: 'Steel Blue', color: '#4682B4', wears: 0, lastWorn: null },
+      { id: '4', name: 'Light Grey', color: '#B0BEC5', wears: 0, lastWorn: null },
+      { id: '5', name: 'Dark Red', color: '#942222', wears: 0, lastWorn: null },
+      { id: '6', name: 'Green', color: '#43A047', wears: 0, lastWorn: null },
+      { id: '7', name: 'Two-Tone Green', color: 'linear-gradient(135deg,#81C784,#2E7D32)', wears: 0, lastWorn: null },
+      { id: '8', name: 'Black', color: '#2B2B2B', wears: 0, lastWorn: null },
+      { id: '9', name: 'Dark Blue', color: '#0A1F5C', wears: 0, lastWorn: null },
+      { id: '10', name: 'Dark Green', color: '#1B5E20', wears: 0, lastWorn: null },
+      { id: '11', name: 'Eden Rose', color: '#C08081', wears: 0, lastWorn: null },
+      { id: '12', name: 'Fossil Blue', color: '#5C6B73', wears: 0, lastWorn: null },
+      { id: '13', name: 'Mocha Orange', color: '#C67B4E', wears: 0, lastWorn: null }
+    ];
+
+    const STORAGE_KEY = 'wardrobe_items_v3';
+    let wardrobe = [];
+
+    // Load state from local device storage or seed defaults
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          wardrobe = JSON.parse(saved);
+          wardrobe = wardrobe.map(item => {
+            if (item.name === 'Dark Red') item.color = '#942222';
+            if (item.name === 'Sergeant Maroon') item.color = '#440000';
+            return item;
+          });
+        } catch (e) {
+          wardrobe = [...defaultItems];
+        }
+      } else {
+        wardrobe = [...defaultItems];
+      }
+      saveData();
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(wardrobe));
+    }
+
+    function getMetaText(item) {
+      if (item.wears === 0) return 'Fresh';
+      if (item.wears === 1) {
+        if (!item.lastWorn) return 'Worn 1 time';
+        const diffMs = Date.now() - item.lastWorn;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return 'Worn today';
+        if (diffDays === 1) return 'Worn yesterday';
+        return `Worn ${diffDays} days ago`;
+      }
+      return 'Dirty';
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function wearItem(id) {
+      const item = wardrobe.find(i => i.id === id);
+      if (!item || item.wears >= 2) return;
+
+      item.wears += 1;
+      item.lastWorn = Date.now();
+      saveData();
+      render();
+
+      if (item.wears === 1) {
+        showToast(`Logged wear for ${item.name} 👍`);
+      } else if (item.wears === 2) {
+        showToast(`${item.name} moved to Laundry Basket 🧺`);
+      }
+    }
+
+    function doLaundry() {
+      const dirtyCount = wardrobe.filter(i => i.wears > 0).length;
+      if (dirtyCount === 0) {
+        showToast('All shirts are already clean! ✨');
+        return;
+      }
+
+      wardrobe.forEach(item => {
+        item.wears = 0;
+        item.lastWorn = null;
+      });
+
+      saveData();
+      render();
+      showToast('Laundry done! All shirts fresh 🧺');
+    }
+
+    function render() {
+      const availableGrid = document.getElementById('availableGrid');
+      const dirtyGrid = document.getElementById('dirtyGrid');
+      const availableEmpty = document.getElementById('availableEmpty');
+      const dirtyEmpty = document.getElementById('dirtyEmpty');
+
+      availableGrid.innerHTML = '';
+      dirtyGrid.innerHTML = '';
+
+      let availableCount = 0;
+      let dirtyCount = 0;
+
+      wardrobe.forEach(item => {
+        const isDirty = item.wears >= 2;
+        const card = document.createElement('div');
+        card.className = `card ${isDirty ? 'dirty' : ''}`;
+        
+        const dotsHtml = `
+          <div class="dots">
+            <div class="dot ${item.wears >= 1 ? 'filled' : ''}"></div>
+            <div class="dot ${item.wears >= 2 ? 'filled' : ''}"></div>
+          </div>
+        `;
+
+        card.innerHTML = `
+          ${dotsHtml}
+          <div class="swatch" style="background: ${item.color}"></div>
+          <div class="name">${item.name}</div>
+          <div class="meta">${getMetaText(item)}</div>
+        `;
+
+        if (!isDirty) {
+          card.onclick = () => wearItem(item.id);
+          availableGrid.appendChild(card);
+          availableCount++;
+        } else {
+          dirtyGrid.appendChild(card);
+          dirtyCount++;
+        }
+      });
+
+      availableEmpty.style.display = availableCount === 0 ? 'block' : 'none';
+      dirtyEmpty.style.display = dirtyCount === 0 ? 'block' : 'none';
+    }
+
+    document.getElementById('laundryBtn').onclick = doLaundry;
+    loadData();
+    render();
+  </script>
+</body>
+</html>
